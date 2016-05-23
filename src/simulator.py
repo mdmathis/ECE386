@@ -39,10 +39,24 @@ def main():
             if stalled:
                 return
             else:
+                
                 if (current_stage < len(stages) - 1):
                     current_stage += 1
                 else:
                     current_stage = 0
+
+                if (pipeline.current_stage == 0):
+                    stage["Fetch"] = "free"
+                elif (pipeline.current_stage == 1):
+                    stage["Decode"] = "free"
+                elif (pipeline.current_stage == 2):
+                    stage["Read Memory"] = "free"
+                elif (pipeline.current_stage == 3):
+                    stage["Execute"] = "free"
+                elif (pipeline.current_stage == 4):
+                    stage["Write Memory"] = "free"
+                        
+             
             return
             
 
