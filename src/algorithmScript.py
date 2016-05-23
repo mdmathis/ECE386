@@ -1,38 +1,56 @@
 #!/usr/bin/python
-# Script to someday convert neural network to algorithm.
 
 
 def main():
     assembly_file = open('Assembly.txt', 'w')
+    hex_file = open('Hex.txt', 'w')
 
     inputs_outputs = int(input('Number of inputs and outputs: '))
     hidden = int(input('Number of hidden: '))
 
     input_base_address = 0
     hidden_base_address = 4 * inputs_outputs
-    input_weight_list = []
-
-    print('You entered:\nInputs / Outputs: ', inputs_outputs, '\nHidden: ', hidden)
-    print('Input Memory Base Address:   %08x' % input_base_address)
-    print('Hidden Memory Base Address:  %08x' % hidden_base_address)
-
     weight_base_address = hidden_base_address + (4 * hidden)
+    hidden_weight_base_address = weight_base_address + (4 * hidden * inputs_outputs)
+    output_base_address = hidden_weight_base_address + (4 * hidden * inputs_outputs)
+
+    print('')
+    print('Input Memory Base Address:   0x%08x' % input_base_address)
+    print('Hidden Memory Base Address:  0x%08x' % hidden_base_address)
+    print('Weight Base Address:         0x%08x' % weight_base_address)
+    print('Hidden Weight Base Address:  0x%08x' % hidden_weight_base_address)
+    print('Output Base Address:         0x%08x' % output_base_address)
+
     for x in range(hidden):
-        input_weight_list.append(int(weight_base_address + (x * 4 * inputs_outputs)))
-        # print('Hidden Weight #%d Base Address: %08x' % (x, previous_weight))
+        assembly_file.write('LOAD R1, 0x%08x\n' % input_base_address)
+        assembly_file.write('LOAD R2, 0x%08x\n' % (weight_base_address + (x * 4 * inputs_outputs)))
 
-    count = 0
-    assembly_file.write('0x0101%08x - LOAD R1, 0x%08x\n' % (input_base_address, input_base_address))
-    assembly_file.write('0x0110%08x - LOAD R2, 0x%08x\n' % (input_weight_list[0], input_weight_list[0]))
+        hex_file.write('0x%08x\n' % ((0x1 << 28) + (0x0 << 26) + input_base_address))
+        hex_file.write('0x%08x\n' % ((0x2 << 28) + (0x0 << 26) + (weight_base_address + (x * 4 * inputs_outputs))))
 
-    for x in input_weight_list:
         for y in range(inputs_outputs):
-            assembly_file.write('0x0011%08x%08x - MULTADD R3, [R1+0x%08x], R2+(0x%08x)\n'
-                                % (y * 4, x + 4 * y, y * 4, x + 4 * y))
+            assembly_file.write('MULTADD R3, R1+, R2+\n')
+            hex_file.write('0x%08x\n' % ((0x1 << 30) + (0x3 << 28) + (0x1 << 26) + (0x2 << 26)))
 
-        assembly_file.write('0x11110%08x - CHECK R3, 0x%08x\n'
-                            % (hidden_base_address + count * 4, hidden_base_address + count * 4))
-        count += 1
+        assembly_file.write('CHECK R3, (0x%08x)\n' % (hidden_base_address + (4 * x)))
+        hex_file.write('0x%08x\n' % ((0x2 << 30) + (0x3 << 28) + (0x0 << 26) + (hidden_base_address + (4 * x))))
+
+    for x in range(inputs_outputs):
+        assembly_file.write('LOAD R1, 0x%08x\n' % (hidden_base_address + (4 * x)))
+        assembly_file.write('LOAD R2, 0x%08x\n' % (hidden_weight_base_address + (x * 4 * hidden)))
+
+        hex_file.write('0x%08x\n' % ((0x1 << 28) + (0x0 << 26) + (hidden_base_address + (4 * x))))
+        hex_file.write('0x%08x\n' % ((0x2 << 28) + (0x0 << 26) + (hidden_weight_base_address + (x * 4 * hidden))))
+
+        for y in range(hidden):
+            assembly_file.write('MULTADD R3, R1+, R2+\n')
+            hex_file.write('0x%08x\n' % ((0x1 << 30) + (0x3 << 28) + (0x1 << 26) + (0x2 << 26)))
+
+        assembly_file.write('CHECK R3, (0x%08x)\n' % (output_base_address + (4 * x)))
+        hex_file.write('0x%08x\n' % ((0x2 << 30) + (0x3 << 28) + (0x0 << 26) + (output_base_address + (4 * x))))
+
+    assembly_file.close()
+    hex_file.close()
 
 if __name__ == "__main__":
     main()
