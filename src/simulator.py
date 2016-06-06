@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import algorithm
-
+import time
 
 class Instruction:
     def __init__(self, opcode, field1, field2, field3):
@@ -42,7 +42,7 @@ def fetch(hex_file):
 
 def decode(inst):
     opcode = inst >> 30
-    if opcode == 0:
+    if opcode == 0 or opcode == 2:
         field1 = (inst & 0x30000000) >> 28
         field2 = 0
         field3 = inst & 0x0FFFFFFF
@@ -111,7 +111,7 @@ def add_hidden(input_dict, hidden, adr):
 
 
 def main():
-    num_hidden, hidden_base = algorithm.file_maker()
+    simulations, num_hidden, hidden_base = algorithm.file_maker()
 
     src_file = open('Hex.txt', 'r')
     output_file = open('Output.txt', 'w')
@@ -119,13 +119,16 @@ def main():
     memory_file = open('Memory.txt', 'r')
 
     print('\n\nSimulation Starting...')
-    print('Simulation Progress')
+    if simulations >= 100:
+        print('Simulation Progress')
 
     totalcount = 0
 
-    for x in range(1000):
+    start = time.time()
+    for g in range(simulations):
 
-        algorithm.progress(1000, x)
+        if simulations >= 100:
+            algorithm.progress(simulations, g)
 
         src_file.seek(0)
         memory_file.seek(0)
@@ -218,9 +221,17 @@ def main():
         output_file.write('-----\n')
         totalcount += count
 
+    end = time.time()
+
     print('\nSimulation Finished!')
-    print('Total Count (1000x): ', totalcount)
-    print('Program Count: ', int(totalcount/1000))
+    print('Simulation Time: %d seconds' % int(end-start))
+    print('Total Cycle Count (%dx): %d' % (simulations, totalcount))
+    print('Program Cycle Count: ', int(totalcount/simulations))
+
+    src_file.close()
+    output_file.close()
+    input_file.close()
+    memory_file.close()
 
 if __name__ == "__main__":
     main()

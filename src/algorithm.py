@@ -31,6 +31,10 @@ def file_maker():
     inputs = int(input('Number of inputs: '))
     outputs = int(input('Number of outputs: '))
     hidden = int(input('Number of hidden: '))
+    simulations = int(input('Number of simulations (up to 1000): '))
+
+    while simulations < 0:
+        simulations = int(input('Number of simulations (up to 1000): '))
 
     input_base_address = 0
     hidden_base_address = 4 * inputs
@@ -48,15 +52,17 @@ def file_maker():
 
     print('Creating Files...\n')
     print('Inputs')
-    for i in range(1000):
+    for i in range(simulations):
         for x in range(inputs):
             rand = random.randrange(0, 2)
             input_file.write('0x%08x : %d\n' % (input_base_address + (4 * x), rand))
 
         input_file.write('-----\n')
 
-        progress(1000, i)
+        if simulations >= 100:
+            progress(simulations, i)
 
+    print('...')
     print('\nInput Weights')
     for x in range(hidden * inputs):
         rand = random.randrange(-1, 2)
@@ -65,6 +71,7 @@ def file_maker():
         if hidden * inputs >= 100:
             progress(hidden * inputs, x)
 
+    print('...')
     print('\nHidden Weights')
     for x in range(hidden * outputs):
         rand = random.randrange(-1, 2)
@@ -73,6 +80,7 @@ def file_maker():
         if hidden * outputs >= 100:
             progress(hidden * outputs, x)
 
+    print('...')
     print('\nAssembly 1')
     for x in range(hidden):
         assembly_file.write('LOAD R1, 0x%08x\n' % input_base_address)
@@ -91,6 +99,7 @@ def file_maker():
         if hidden >= 100:
             progress(hidden, x)
 
+    print('...')
     print('\nAssembly 2')
     for x in range(outputs):
         assembly_file.write('LOAD R1, 0x%08x\n' % hidden_base_address)
@@ -109,10 +118,14 @@ def file_maker():
         if outputs >= 100:
             progress(outputs, x)
 
+    print('...')
+
     assembly_file.close()
     hex_file.close()
+    input_file.close()
+    assembly_file.close()
 
-    return hidden, hidden_base_address
+    return simulations, hidden, hidden_base_address
 
 if __name__ == "__main__":
     file_maker()
